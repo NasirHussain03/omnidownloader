@@ -1,0 +1,6 @@
+User-agent: *
+Allow: /
+Disallow: /api/download
+Disallow: /api/redirect-download
+
+Sitemap: https://omnidownloader.com/sitemap.xml

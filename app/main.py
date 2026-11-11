@@ -283,6 +283,22 @@ if os.path.exists(STATIC_DIR):
     app.mount("/static", StaticFiles(directory=STATIC_DIR), name="static")
 
 
+@app.get("/robots.txt", include_in_schema=False)
+async def serve_robots():
+    robots_file = os.path.join(STATIC_DIR, "robots.txt")
+    if os.path.exists(robots_file):
+        return FileResponse(robots_file, media_type="text/plain")
+    return Response(content="User-agent: *\nAllow: /\n", media_type="text/plain")
+
+
+@app.get("/sitemap.xml", include_in_schema=False)
+async def serve_sitemap():
+    sitemap_file = os.path.join(STATIC_DIR, "sitemap.xml")
+    if os.path.exists(sitemap_file):
+        return FileResponse(sitemap_file, media_type="application/xml")
+    return Response(content="<xml></xml>", media_type="application/xml")
+
+
 @app.get("/")
 async def serve_index():
     index_file = os.path.join(STATIC_DIR, "index.html")

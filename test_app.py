@@ -61,6 +61,17 @@ def test_endpoints():
     assert r.headers["location"] == "https://example.com/video.mp4"
     print("Redirect-download 302 OK!")
 
+    print("\nTesting /robots.txt and /sitemap.xml (SEO Endpoints)...")
+    r_robots = client.get("/robots.txt")
+    assert r_robots.status_code == 200
+    assert "User-agent:" in r_robots.text
+    print("robots.txt: 200 OK")
+
+    r_sitemap = client.get("/sitemap.xml")
+    assert r_sitemap.status_code == 200
+    assert "urlset" in r_sitemap.text
+    print("sitemap.xml: 200 OK")
+
     print("\nAll endpoint tests PASSED successfully!")
 
 if __name__ == "__main__":
