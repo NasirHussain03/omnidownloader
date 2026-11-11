@@ -1,0 +1,10 @@
+services:
+  - type: web
+    name: omni-downloader
+    env: docker
+    plan: free
+    dockerfilePath: Dockerfile
+    healthCheckPath: /api/health
+    envVars:
+      - key: PORT
+        value: 10000
