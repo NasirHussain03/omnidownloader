@@ -21,6 +21,7 @@ from app.models import (
 from app.ytdlp_service import (
     YtDlpService,
     sanitize_filename,
+    clean_media_url,
     USER_AGENT,
     MAX_CONCURRENT_EXTRACTIONS,
 )
@@ -154,8 +155,9 @@ async def extract_get_endpoint(
 
 
 async def _process_extract(url: str):
-    """Shared extraction handler."""
-    url = url.strip()
+    """Shared extraction handler with URL normalization and logging."""
+    url = clean_media_url(url.strip())
+    print(f"--> [EXTRACT REQUEST] URL: {url}")
     if not url.startswith("http://") and not url.startswith("https://"):
         raise HTTPException(
             status_code=400,
@@ -164,9 +166,11 @@ async def _process_extract(url: str):
 
     try:
         response = await YtDlpService.extract_url(url)
+        print(f"<-- [EXTRACT SUCCESS] '{response.title}' ({len(response.formats)} formats)")
         return response
     except yt_dlp.utils.DownloadError as exc:
         err_msg = str(exc)
+        print(f"xx> [EXTRACT DOWNLOAD ERROR] {err_msg}")
         err_msg_lower = err_msg.lower()
         if "private video" in err_msg_lower or "login" in err_msg_lower:
             detail = "This video is private, age-restricted, or requires account login."
@@ -179,8 +183,10 @@ async def _process_extract(url: str):
             detail = f"Could not extract video from the provided link: {clean_msg}"
         raise HTTPException(status_code=400, detail=detail)
     except ValueError as exc:
+        print(f"xx> [EXTRACT VALUE ERROR] {exc}")
         raise HTTPException(status_code=400, detail=str(exc))
     except Exception as exc:
+        print(f"xx> [EXTRACT UNEXPECTED ERROR] {exc}")
         raise HTTPException(
             status_code=500,
             detail=f"An unexpected extraction error occurred: {str(exc)}",
@@ -281,6 +287,14 @@ async def download_proxy(
 STATIC_DIR = os.path.join(os.path.dirname(os.path.dirname(__file__)), "static")
 if os.path.exists(STATIC_DIR):
     app.mount("/static", StaticFiles(directory=STATIC_DIR), name="static")
+
+
+@app.get("/favicon.ico", include_in_schema=False)
+async def favicon():
+    fav = os.path.join(STATIC_DIR, "placeholder.jpg")
+    if os.path.exists(fav):
+        return FileResponse(fav, media_type="image/jpeg")
+    return Response(status_code=204)
 
 
 @app.get("/robots.txt", include_in_schema=False)

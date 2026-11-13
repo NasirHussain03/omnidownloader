@@ -89,6 +89,25 @@ def sanitize_filename(name: str) -> str:
     return clean[:100] if clean else "video"
 
 
+def clean_media_url(raw_url: str) -> str:
+    """Normalize URL and strip social media tracking parameters."""
+    url = raw_url.strip()
+    try:
+        parsed = urllib.parse.urlparse(url)
+        # Strip tracking query params for Instagram, Facebook, TikTok
+        if any(domain in parsed.netloc.lower() for domain in ["instagram.com", "tiktok.com", "facebook.com", "fb.watch"]):
+            query_params = urllib.parse.parse_qs(parsed.query)
+            filtered = {
+                k: v for k, v in query_params.items()
+                if not k.lower().startswith("utm_") and k.lower() not in ["igsh", "fbclid", "ref", "rdid"]
+            }
+            new_query = urllib.parse.urlencode(filtered, doseq=True)
+            return urllib.parse.urlunparse(parsed._replace(query=new_query))
+    except Exception:
+        pass
+    return url
+
+
 class YtDlpService:
     @staticmethod
     def _get_base_opts() -> Dict[str, Any]:
@@ -98,12 +117,6 @@ class YtDlpService:
             "skip_download": True,
             "noplaylist": True,
             "extract_flat": False,
-            "extractor_args": {
-                "youtube": {
-                    "player_client": ["android", "ios", "mweb", "web"],
-                    "player_skip": ["webpage", "configs"],
-                }
-            },
             "http_headers": {
                 "User-Agent": USER_AGENT,
                 "Accept-Language": "en-US,en;q=0.9",
@@ -183,8 +196,23 @@ class YtDlpService:
         async def _fetch():
             def _do_extract():
                 opts = cls._get_base_opts()
-                with yt_dlp.YoutubeDL(opts) as ydl:
-                    return ydl.extract_info(cleaned_url, download=False)
+                try:
+                    with yt_dlp.YoutubeDL(opts) as ydl:
+                        return ydl.extract_info(cleaned_url, download=False)
+                except Exception as first_exc:
+                    # If standard extraction fails (e.g. YouTube cloud IP block), retry with mobile client
+                    url_low = cleaned_url.lower()
+                    if "youtube" in url_low or "youtu.be" in url_low:
+                        fallback_opts = dict(opts)
+                        fallback_opts["extractor_args"] = {
+                            "youtube": {"player_client": ["android", "ios", "mweb"]}
+                        }
+                        try:
+                            with yt_dlp.YoutubeDL(fallback_opts) as fallback_ydl:
+                                return fallback_ydl.extract_info(cleaned_url, download=False)
+                        except Exception:
+                            pass
+                    raise first_exc
 
             async with EXTRACTION_SEMAPHORE:
                 info = await asyncio.to_thread(_do_extract)
