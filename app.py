@@ -1,8 +1,7 @@
 import os
 import gradio as gr
-from fastapi.responses import FileResponse
+from fastapi.responses import FileResponse, Response
 from starlette.routing import Route
-from starlette.responses import Response
 from app.main import app as fastapi_app
 
 # ZeroGPU decorator compatibility
@@ -55,10 +54,13 @@ async def serve_sitemap(request):
     return Response(status_code=404)
 
 
-# Initialize Gradio Blocks
+# Initialize Gradio Blocks wrapper
 with gr.Blocks(title="OmniDownloader") as demo:
     gr.HTML('<meta http-equiv="refresh" content="0; url=/">')
     gr.Markdown("# 🚀 OmniDownloader is Live!")
+
+# Launch without thread locking so route customization runs on the active demo.app
+demo.launch(prevent_thread_lock=True)
 
 # 1. Mount all FastAPI API routes into demo.app
 demo.app.include_router(fastapi_app.router)
@@ -70,5 +72,6 @@ demo.app.routes.insert(0, Route("/favicon.ico", endpoint=serve_favicon))
 demo.app.routes.insert(0, Route("/static/{file_path:path}", endpoint=serve_custom_static))
 demo.app.routes.insert(0, Route("/", endpoint=serve_home))
 
+# Keep the process alive for Hugging Face Spaces
 if __name__ == "__main__":
-    demo.launch()
+    demo.block_thread()
