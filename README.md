@@ -1,3 +1,15 @@
+---
+title: OmniDownloader
+emoji: 🚀
+colorFrom: purple
+colorTo: indigo
+sdk: gradio
+sdk_version: 4.44.1
+app_file: app.py
+pinned: false
+license: mit
+---
+
 # OmniDownloader 🚀
 
 Universal Video & Audio Downloader Web Application built with **FastAPI**, **yt-dlp**, and a responsive **Tailwind CSS + Vanilla JavaScript** frontend.
