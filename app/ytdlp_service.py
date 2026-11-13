@@ -126,7 +126,7 @@ def clean_media_url(raw_url: str) -> str:
 class YtDlpService:
     @staticmethod
     def _get_base_opts() -> Dict[str, Any]:
-        return {
+        opts = {
             "quiet": True,
             "no_warnings": True,
             "skip_download": True,
@@ -142,6 +142,23 @@ class YtDlpService:
                 }
             },
         }
+
+        # Automatic cookie detection for cloud environments
+        cookie_path = os.getenv("COOKIES_FILE", "cookies.txt")
+        if os.path.exists(cookie_path) and os.path.getsize(cookie_path) > 0:
+            opts["cookiefile"] = cookie_path
+        elif os.getenv("YOUTUBE_COOKIES"):
+            tmp_cookie = "/tmp/cookies.txt"
+            if not os.path.exists(tmp_cookie):
+                try:
+                    with open(tmp_cookie, "w", encoding="utf-8") as f:
+                        f.write(os.getenv("YOUTUBE_COOKIES"))
+                except Exception:
+                    pass
+            if os.path.exists(tmp_cookie):
+                opts["cookiefile"] = tmp_cookie
+
+        return opts
 
     @classmethod
     async def search_youtube(cls, query: str, limit: int = 10) -> SearchResponse:
