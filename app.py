@@ -2,6 +2,16 @@ import os
 import gradio as gr
 from app.main import app as fastapi_app
 
+# Satisfy ZeroGPU startup check if running on Hugging Face ZeroGPU
+try:
+    import spaces
+
+    @spaces.GPU
+    def dummy_gpu_initializer():
+        return True
+except (ImportError, Exception):
+    pass
+
 # Gradio wrapper for Hugging Face Spaces embedding
 custom_css = """
 footer { visibility: hidden !important; }
