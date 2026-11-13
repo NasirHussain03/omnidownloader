@@ -138,7 +138,7 @@ class YtDlpService:
             },
             "extractor_args": {
                 "youtube": {
-                    "player_client": ["android_creator", "android_testsuite", "android"]
+                    "player_client": ["android", "android_creator"]
                 }
             },
         }
@@ -237,16 +237,27 @@ class YtDlpService:
                     with yt_dlp.YoutubeDL(opts) as ydl:
                         return ydl.extract_info(cleaned_url, download=False)
                 except Exception as first_exc:
-                    # If standard extraction fails (e.g. YouTube cloud IP block), retry with mobile client
                     url_low = cleaned_url.lower()
                     if "youtube" in url_low or "youtu.be" in url_low:
-                        fallback_opts = dict(opts)
-                        fallback_opts["extractor_args"] = {
-                            "youtube": {"player_client": ["android_testsuite", "android_music", "web"]}
-                        }
+                        # Fallback 1: Try android_creator (bypasses bot checks for old / restricted videos)
                         try:
-                            with yt_dlp.YoutubeDL(fallback_opts) as fallback_ydl:
-                                return fallback_ydl.extract_info(cleaned_url, download=False)
+                            fb1_opts = dict(opts)
+                            fb1_opts["extractor_args"] = {
+                                "youtube": {"player_client": ["android_creator"]}
+                            }
+                            with yt_dlp.YoutubeDL(fb1_opts) as fb1_ydl:
+                                return fb1_ydl.extract_info(cleaned_url, download=False)
+                        except Exception:
+                            pass
+
+                        # Fallback 2: Try web_embedded client
+                        try:
+                            fb2_opts = dict(opts)
+                            fb2_opts["extractor_args"] = {
+                                "youtube": {"player_client": ["web_embedded", "android"]}
+                            }
+                            with yt_dlp.YoutubeDL(fb2_opts) as fb2_ydl:
+                                return fb2_ydl.extract_info(cleaned_url, download=False)
                         except Exception:
                             pass
                     raise first_exc
