@@ -136,6 +136,11 @@ class YtDlpService:
                 "User-Agent": USER_AGENT,
                 "Accept-Language": "en-US,en;q=0.9",
             },
+            "extractor_args": {
+                "youtube": {
+                    "player_client": ["android_creator", "android_testsuite", "android"]
+                }
+            },
         }
 
     @classmethod
@@ -220,7 +225,7 @@ class YtDlpService:
                     if "youtube" in url_low or "youtu.be" in url_low:
                         fallback_opts = dict(opts)
                         fallback_opts["extractor_args"] = {
-                            "youtube": {"player_client": ["android", "ios", "mweb"]}
+                            "youtube": {"player_client": ["android_testsuite", "android_music", "web"]}
                         }
                         try:
                             with yt_dlp.YoutubeDL(fallback_opts) as fallback_ydl:
