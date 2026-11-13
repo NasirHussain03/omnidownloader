@@ -4,6 +4,9 @@ from fastapi.responses import FileResponse, Response
 from starlette.routing import Route
 from app.main import app as fastapi_app
 
+# Disable Gradio 5 SSR proxy so Python FastAPI handles port 7860 directly
+os.environ["GRADIO_SSR_MODE"] = "False"
+
 # ZeroGPU decorator compatibility
 try:
     import spaces
@@ -59,8 +62,8 @@ with gr.Blocks(title="OmniDownloader") as demo:
     gr.HTML('<meta http-equiv="refresh" content="0; url=/">')
     gr.Markdown("# 🚀 OmniDownloader is Live!")
 
-# Launch without thread locking so route customization runs on the active demo.app
-demo.launch(prevent_thread_lock=True)
+# Launch without thread locking & without SSR proxy so FastAPI directly binds and receives all traffic
+demo.launch(prevent_thread_lock=True, ssr_mode=False)
 
 # 1. Mount all FastAPI API routes into demo.app
 demo.app.include_router(fastapi_app.router)
