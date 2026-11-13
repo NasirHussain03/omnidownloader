@@ -127,7 +127,15 @@ async function handleExtract(event) {
     const durationMs = Math.round(performance.now() - t0);
 
     if (!res.ok) {
-      throw new Error(data.detail || data.error || 'Failed to extract video');
+      let msg = 'Failed to extract media';
+      if (typeof data.detail === 'string') {
+        msg = data.detail;
+      } else if (Array.isArray(data.detail) && data.detail.length > 0) {
+        msg = data.detail.map(d => d.msg || JSON.stringify(d)).join('; ');
+      } else if (data.error) {
+        msg = data.error;
+      }
+      throw new Error(msg);
     }
 
     data._latencyMs = durationMs;
@@ -391,7 +399,11 @@ async function handleSearch(event) {
     const data = await res.json();
 
     if (!res.ok) {
-      throw new Error(data.detail || data.error || 'Failed to search YouTube');
+      let msg = 'Failed to search YouTube';
+      if (typeof data.detail === 'string') msg = data.detail;
+      else if (Array.isArray(data.detail) && data.detail.length > 0) msg = data.detail.map(d => d.msg || JSON.stringify(d)).join('; ');
+      else if (data.error) msg = data.error;
+      throw new Error(msg);
     }
 
     currentSearchResults = data.results || [];

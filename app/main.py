@@ -13,6 +13,7 @@ import httpx
 import yt_dlp.utils
 
 from app.models import (
+    SearchRequest,
     SearchResponse,
     ExtractRequest,
     ExtractResponse,
@@ -128,6 +129,27 @@ async def search_endpoint(
 
 
 @app.post(
+    "/api/search",
+    response_model=SearchResponse,
+    responses={400: {"model": ErrorResponse}, 500: {"model": ErrorResponse}},
+)
+async def search_post_endpoint(payload: SearchRequest):
+    """POST variant of search for JSON payload clients."""
+    search_q = payload.query or payload.q
+    if not search_q or not search_q.strip():
+        raise HTTPException(status_code=400, detail="Search query cannot be empty")
+    limit = payload.limit or 10
+    try:
+        results = await YtDlpService.search_youtube(query=search_q.strip(), limit=limit)
+        return results
+    except Exception as exc:
+        raise HTTPException(
+            status_code=500,
+            detail=f"Failed to perform search: {str(exc)}",
+        )
+
+
+@app.post(
     "/api/extract",
     response_model=ExtractResponse,
     responses={400: {"model": ErrorResponse}, 500: {"model": ErrorResponse}},
@@ -172,15 +194,15 @@ async def _process_extract(url: str):
         err_msg = str(exc)
         print(f"xx> [EXTRACT DOWNLOAD ERROR] {err_msg}")
         err_msg_lower = err_msg.lower()
-        if "private video" in err_msg_lower or "login" in err_msg_lower:
-            detail = "This video is private, age-restricted, or requires account login."
+        if "empty media response" in err_msg_lower or "login" in err_msg_lower or "private" in err_msg_lower:
+            detail = "This post is private or requires logging in to access."
         elif "unavailable" in err_msg_lower or "not available" in err_msg_lower:
             detail = "This video is unavailable, deleted, or region-restricted."
         elif "not a valid url" in err_msg_lower or "unsupported url" in err_msg_lower:
-            detail = "The provided URL is not supported or not recognized as a valid video."
+            detail = "The provided URL is not supported or not recognized as a valid media link."
         else:
             clean_msg = err_msg.split("ERROR:")[-1].strip()
-            detail = f"Could not extract video from the provided link: {clean_msg}"
+            detail = f"Could not extract video: {clean_msg}"
         raise HTTPException(status_code=400, detail=detail)
     except ValueError as exc:
         print(f"xx> [EXTRACT VALUE ERROR] {exc}")
@@ -242,9 +264,12 @@ async def download_proxy(
                 detail="Remote media server rejected stream request. Please re-extract video.",
             )
 
-        encoded_filename = urllib.parse.quote(filename)
+        ascii_filename = filename.encode("ascii", "ignore").decode("ascii").strip()
+        if not ascii_filename or ascii_filename == f".{ext}":
+            ascii_filename = f"video.{ext}"
+        encoded_filename = urllib.parse.quote(filename, encoding="utf-8")
         content_disposition = (
-            f'attachment; filename="{filename}"; filename*=UTF-8\'\'{encoded_filename}'
+            f'attachment; filename="{ascii_filename}"; filename*=UTF-8\'\'{encoded_filename}'
         )
 
         response_headers = {
