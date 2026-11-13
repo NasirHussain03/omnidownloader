@@ -98,6 +98,12 @@ class YtDlpService:
             "skip_download": True,
             "noplaylist": True,
             "extract_flat": False,
+            "extractor_args": {
+                "youtube": {
+                    "player_client": ["android", "ios", "mweb", "web"],
+                    "player_skip": ["webpage", "configs"],
+                }
+            },
             "http_headers": {
                 "User-Agent": USER_AGENT,
                 "Accept-Language": "en-US,en;q=0.9",
