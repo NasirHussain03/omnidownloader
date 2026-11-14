@@ -4,6 +4,11 @@ import re
 import urllib.parse
 from typing import Dict, Any, List, Optional, Union
 import yt_dlp
+try:
+    from yt_dlp.networking.impersonate import ImpersonateTarget
+    CHROME_TARGET = ImpersonateTarget.from_str("chrome")
+except Exception:
+    CHROME_TARGET = None
 
 from app.models import SearchItem, SearchResponse, FormatItem, ExtractResponse
 from app.cache import search_cache, extract_cache, get_or_set_cached
@@ -143,6 +148,9 @@ class YtDlpService:
                 "Accept-Language": "en-US,en;q=0.9",
             },
         }
+
+        if CHROME_TARGET:
+            opts["impersonate"] = CHROME_TARGET
 
         # Automatic cookie detection for cloud environments
         cookie_path = os.getenv("COOKIES_FILE", "cookies.txt")
