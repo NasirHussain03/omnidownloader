@@ -136,18 +136,19 @@ class YtDlpService:
             "check_formats": False,
             "remote_components": ["ejs:github"],
             "js_runtimes": {"node": {}, "deno": {}},
-            "socket_timeout": 20,
-            "retries": 3,
+            "socket_timeout": 15,
+            "retries": 1,
             "http_headers": {
                 "User-Agent": USER_AGENT,
                 "Accept-Language": "en-US,en;q=0.9",
             },
         }
 
-        # Automatic cookie detection for cloud environments
-        cookie_path = os.getenv("COOKIES_FILE", "cookies.txt")
-        if os.path.exists(cookie_path) and os.path.getsize(cookie_path) > 0:
-            opts["cookiefile"] = cookie_path
+        # Use cookies if explicitly requested via USE_COOKIES=1 or YOUTUBE_COOKIES
+        if os.getenv("USE_COOKIES", "").lower() in ("1", "true", "yes"):
+            cookie_path = os.getenv("COOKIES_FILE", "cookies.txt")
+            if os.path.exists(cookie_path) and os.path.getsize(cookie_path) > 0:
+                opts["cookiefile"] = cookie_path
         elif os.getenv("YOUTUBE_COOKIES"):
             tmp_cookie = "/tmp/cookies.txt"
             if not os.path.exists(tmp_cookie):
@@ -244,12 +245,13 @@ class YtDlpService:
                 except Exception as first_exc:
                     url_low = cleaned_url.lower()
                     if "youtube" in url_low or "youtu.be" in url_low:
-                        # Fallback 1: Retry without cookies in case cookies expired/triggered bot check
-                        if "cookiefile" in opts:
+                        # Fallback 1: Try with cookies if not used originally
+                        cookie_path = os.getenv("COOKIES_FILE", "cookies.txt")
+                        if "cookiefile" not in opts and os.path.exists(cookie_path) and os.path.getsize(cookie_path) > 0:
                             try:
-                                no_cookie_opts = dict(opts)
-                                no_cookie_opts.pop("cookiefile", None)
-                                with yt_dlp.YoutubeDL(no_cookie_opts) as fb0_ydl:
+                                cookie_opts = dict(opts)
+                                cookie_opts["cookiefile"] = cookie_path
+                                with yt_dlp.YoutubeDL(cookie_opts) as fb0_ydl:
                                     return fb0_ydl.extract_info(cleaned_url, download=False)
                             except Exception:
                                 pass
