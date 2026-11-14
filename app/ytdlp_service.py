@@ -144,11 +144,10 @@ class YtDlpService:
             },
         }
 
-        # Use cookies if explicitly requested via USE_COOKIES=1 or YOUTUBE_COOKIES
-        if os.getenv("USE_COOKIES", "").lower() in ("1", "true", "yes"):
-            cookie_path = os.getenv("COOKIES_FILE", "cookies.txt")
-            if os.path.exists(cookie_path) and os.path.getsize(cookie_path) > 0:
-                opts["cookiefile"] = cookie_path
+        # Automatic cookie detection for cloud environments
+        cookie_path = os.getenv("COOKIES_FILE", "cookies.txt")
+        if os.path.exists(cookie_path) and os.path.getsize(cookie_path) > 0:
+            opts["cookiefile"] = cookie_path
         elif os.getenv("YOUTUBE_COOKIES"):
             tmp_cookie = "/tmp/cookies.txt"
             if not os.path.exists(tmp_cookie):
@@ -245,9 +244,17 @@ class YtDlpService:
                 except Exception as first_exc:
                     url_low = cleaned_url.lower()
                     if "youtube" in url_low or "youtu.be" in url_low:
-                        # Fallback 1: Try with cookies if not used originally
+                        # Fallback 1: Toggle cookie state (retry without cookies if used, or with cookies if not)
                         cookie_path = os.getenv("COOKIES_FILE", "cookies.txt")
-                        if "cookiefile" not in opts and os.path.exists(cookie_path) and os.path.getsize(cookie_path) > 0:
+                        if "cookiefile" in opts:
+                            try:
+                                no_cookie_opts = dict(opts)
+                                no_cookie_opts.pop("cookiefile", None)
+                                with yt_dlp.YoutubeDL(no_cookie_opts) as fb0_ydl:
+                                    return fb0_ydl.extract_info(cleaned_url, download=False)
+                            except Exception:
+                                pass
+                        elif os.path.exists(cookie_path) and os.path.getsize(cookie_path) > 0:
                             try:
                                 cookie_opts = dict(opts)
                                 cookie_opts["cookiefile"] = cookie_path

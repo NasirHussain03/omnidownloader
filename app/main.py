@@ -110,6 +110,7 @@ async def debug_ytdlp_endpoint(
     url: str = Query("https://www.youtube.com/shorts/VaAgP-r8kMg"),
     timeout_sec: int = Query(20, ge=5, le=30),
     use_cookies: bool = Query(False),
+    client: str = Query("default"),
 ):
     import subprocess
     cmd = [
@@ -121,6 +122,8 @@ async def debug_ytdlp_endpoint(
         "--socket-timeout", "10",
         "--retries", "1",
     ]
+    if client and client != "default":
+        cmd.extend(["--extractor-args", f"youtube:player_client={client}"])
     if use_cookies and os.path.exists("cookies.txt"):
         cmd.extend(["--cookies", "cookies.txt"])
     cmd.append(url)

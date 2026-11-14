@@ -6,13 +6,19 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
     PYTHONUNBUFFERED=1 \
     DEBIAN_FRONTEND=noninteractive
 
-# Install system dependencies including ffmpeg, nodejs (JS challenge solving), and ca-certificates
+# Install system dependencies including ffmpeg, ca-certificates, curl, unzip, nodejs
 RUN apt-get update && apt-get install -y --no-install-recommends \
     ffmpeg \
     ca-certificates \
     curl \
+    unzip \
     nodejs \
     && rm -rf /var/lib/apt/lists/*
+
+# Install Deno static binary for native YouTube challenge solving
+RUN curl -fsSL https://deno.land/install.sh | sh && \
+    cp /root/.deno/bin/deno /usr/local/bin/deno && \
+    chmod 755 /usr/local/bin/deno
 
 # Hugging Face Spaces runs as user 1000 by default
 RUN useradd -m -u 1000 user
