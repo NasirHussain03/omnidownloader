@@ -133,6 +133,7 @@ class YtDlpService:
             "noplaylist": True,
             "extract_flat": False,
             "check_formats": False,
+            "js_runtimes": {"node": {}, "deno": {}},
             "socket_timeout": 15,
             "retries": 2,
             "http_headers": {
