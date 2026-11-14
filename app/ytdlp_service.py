@@ -272,7 +272,7 @@ class YtDlpService:
 
             async with EXTRACTION_SEMAPHORE:
                 try:
-                    info = await asyncio.wait_for(asyncio.to_thread(_do_extract), timeout=30.0)
+                    info = await asyncio.wait_for(asyncio.to_thread(_do_extract), timeout=60.0)
                 except asyncio.TimeoutError:
                     raise ValueError("Media extraction timed out. The provider took too long to respond.")
 

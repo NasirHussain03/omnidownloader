@@ -16,7 +16,7 @@ worker_class = "uvicorn.workers.UvicornWorker"
 # Worker lifecycle & memory recycling (prevents memory bloat under heavy load)
 max_requests = 500
 max_requests_jitter = 50
-timeout = 60
+timeout = 90
 graceful_timeout = 20
 keepalive = 5
 
