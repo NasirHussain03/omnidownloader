@@ -105,6 +105,43 @@ async def stats_endpoint():
     }
 
 
+@app.get("/api/debug-ytdlp")
+async def debug_ytdlp_endpoint(
+    url: str = Query("https://www.youtube.com/shorts/VaAgP-r8kMg"),
+    timeout_sec: int = Query(20, ge=5, le=30),
+    use_cookies: bool = Query(False),
+):
+    import subprocess
+    cmd = [
+        "python", "-m", "yt_dlp",
+        "-v",
+        "--dump-json",
+        "--skip-download",
+        "--check-formats=False",
+        "--socket-timeout", "10",
+        "--retries", "1",
+    ]
+    if use_cookies and os.path.exists("cookies.txt"):
+        cmd.extend(["--cookies", "cookies.txt"])
+    cmd.append(url)
+
+    try:
+        proc = subprocess.run(cmd, capture_output=True, text=True, timeout=timeout_sec)
+        return {
+            "code": proc.returncode,
+            "stdout_len": len(proc.stdout),
+            "stderr": proc.stderr[-2000:],
+        }
+    except subprocess.TimeoutExpired as te:
+        return {
+            "code": -1,
+            "error": "Command timed out after " + str(timeout_sec) + "s",
+            "stderr": (te.stderr or "")[-2000:] if hasattr(te, "stderr") else "",
+        }
+    except Exception as e:
+        return {"code": -2, "error": str(e)}
+
+
 @app.get(
     "/api/search",
     response_model=SearchResponse,
