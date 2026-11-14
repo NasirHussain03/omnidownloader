@@ -132,18 +132,12 @@ class YtDlpService:
             "skip_download": True,
             "noplaylist": True,
             "extract_flat": False,
-            "source_address": "0.0.0.0",
-            "geo_bypass": True,
+            "format": "all",
             "socket_timeout": 15,
-            "retries": 3,
+            "retries": 2,
             "http_headers": {
                 "User-Agent": USER_AGENT,
                 "Accept-Language": "en-US,en;q=0.9",
-            },
-            "extractor_args": {
-                "youtube": {
-                    "player_client": ["android", "web"]
-                }
             },
         }
 
