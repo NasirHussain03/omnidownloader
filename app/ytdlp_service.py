@@ -134,17 +134,13 @@ class YtDlpService:
             "extract_flat": False,
             "format": "all",
             "check_formats": False,
+            "remote_components": ["ejs:github"],
             "js_runtimes": {"node": {}, "deno": {}},
-            "socket_timeout": 15,
-            "retries": 2,
+            "socket_timeout": 20,
+            "retries": 3,
             "http_headers": {
                 "User-Agent": USER_AGENT,
                 "Accept-Language": "en-US,en;q=0.9",
-            },
-            "extractor_args": {
-                "youtube": {
-                    "player_client": ["tv_embedded", "android_creator", "web"]
-                }
             },
         }
 
@@ -248,22 +244,32 @@ class YtDlpService:
                 except Exception as first_exc:
                     url_low = cleaned_url.lower()
                     if "youtube" in url_low or "youtu.be" in url_low:
-                        # Fallback 1: Try android_creator (bypasses bot checks for old / restricted videos)
+                        # Fallback 1: Retry without cookies in case cookies expired/triggered bot check
+                        if "cookiefile" in opts:
+                            try:
+                                no_cookie_opts = dict(opts)
+                                no_cookie_opts.pop("cookiefile", None)
+                                with yt_dlp.YoutubeDL(no_cookie_opts) as fb0_ydl:
+                                    return fb0_ydl.extract_info(cleaned_url, download=False)
+                            except Exception:
+                                pass
+
+                        # Fallback 2: Try mobile client (android, ios)
                         try:
                             fb1_opts = dict(opts)
                             fb1_opts["extractor_args"] = {
-                                "youtube": {"player_client": ["android_creator"]}
+                                "youtube": {"player_client": ["android", "ios"]}
                             }
                             with yt_dlp.YoutubeDL(fb1_opts) as fb1_ydl:
                                 return fb1_ydl.extract_info(cleaned_url, download=False)
                         except Exception:
                             pass
 
-                        # Fallback 2: Try web_embedded client
+                        # Fallback 3: Try mweb client
                         try:
                             fb2_opts = dict(opts)
                             fb2_opts["extractor_args"] = {
-                                "youtube": {"player_client": ["web_embedded", "android"]}
+                                "youtube": {"player_client": ["mweb"]}
                             }
                             with yt_dlp.YoutubeDL(fb2_opts) as fb2_ydl:
                                 return fb2_ydl.extract_info(cleaned_url, download=False)

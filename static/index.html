@@ -674,7 +674,13 @@ async function handleExtract(event) {
       body: JSON.stringify({ url: url })
     });
 
-    const data = await res.json();
+    let data;
+    try {
+      data = await res.json();
+    } catch (_jsonErr) {
+      const rawText = await res.text().catch(() => '');
+      data = { detail: rawText || `Server responded with HTTP ${res.status}` };
+    }
     const durationMs = Math.round(performance.now() - t0);
 
     if (!res.ok) {
