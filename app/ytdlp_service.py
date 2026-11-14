@@ -132,6 +132,7 @@ class YtDlpService:
             "skip_download": True,
             "noplaylist": True,
             "extract_flat": False,
+            "format": "all",
             "check_formats": False,
             "js_runtimes": {"node": {}, "deno": {}},
             "socket_timeout": 15,
@@ -139,6 +140,11 @@ class YtDlpService:
             "http_headers": {
                 "User-Agent": USER_AGENT,
                 "Accept-Language": "en-US,en;q=0.9",
+            },
+            "extractor_args": {
+                "youtube": {
+                    "player_client": ["tv_embedded", "android_creator", "web"]
+                }
             },
         }
 
