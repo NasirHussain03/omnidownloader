@@ -134,6 +134,8 @@ class YtDlpService:
             "extract_flat": False,
             "source_address": "0.0.0.0",
             "geo_bypass": True,
+            "socket_timeout": 15,
+            "retries": 3,
             "http_headers": {
                 "User-Agent": USER_AGENT,
                 "Accept-Language": "en-US,en;q=0.9",
@@ -177,13 +179,17 @@ class YtDlpService:
                     "no_warnings": True,
                     "skip_download": True,
                     "extract_flat": "in_playlist",
+                    "socket_timeout": 15,
                     "http_headers": {"User-Agent": USER_AGENT},
                 }
                 with yt_dlp.YoutubeDL(opts) as ydl:
                     return ydl.extract_info(search_query, download=False)
 
             async with EXTRACTION_SEMAPHORE:
-                info = await asyncio.to_thread(_do_search)
+                try:
+                    info = await asyncio.wait_for(asyncio.to_thread(_do_search), timeout=20.0)
+                except asyncio.TimeoutError:
+                    raise ValueError("YouTube search timed out. Please try again with different keywords.")
 
             entries = info.get("entries", []) if info else []
 
@@ -265,7 +271,10 @@ class YtDlpService:
                     raise first_exc
 
             async with EXTRACTION_SEMAPHORE:
-                info = await asyncio.to_thread(_do_extract)
+                try:
+                    info = await asyncio.wait_for(asyncio.to_thread(_do_extract), timeout=30.0)
+                except asyncio.TimeoutError:
+                    raise ValueError("Media extraction timed out. The provider took too long to respond.")
 
             if not info:
                 raise ValueError("No video data could be extracted from this URL.")
