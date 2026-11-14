@@ -132,7 +132,7 @@ class YtDlpService:
             "skip_download": True,
             "noplaylist": True,
             "extract_flat": False,
-            "format": "all",
+            "check_formats": False,
             "socket_timeout": 15,
             "retries": 2,
             "http_headers": {
