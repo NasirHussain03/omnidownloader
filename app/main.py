@@ -51,7 +51,7 @@ async def lifespan(app: FastAPI):
 app = FastAPI(
     title="OmniDownloader API",
     description="High-Throughput Universal Video Search & Stream Extraction API",
-    version="1.2.0",
+    version="1.2.1",
     lifespan=lifespan,
 )
 
@@ -73,7 +73,7 @@ async def health_check():
     return {
         "status": "ok",
         "app": "OmniDownloader",
-        "version": "1.2.0",
+        "version": "1.2.1",
         "supported_platforms": [
             "YouTube",
             "Instagram",

@@ -139,6 +139,7 @@ class YtDlpService:
             "extract_flat": False,
             "format": "all",
             "check_formats": False,
+            "ignoreerrors": True,
             "remote_components": ["ejs:github"],
             "js_runtimes": {"node": {}, "deno": {}},
             "socket_timeout": 12,
@@ -249,23 +250,36 @@ class YtDlpService:
                 url_low = cleaned_url.lower()
                 is_youtube = "youtube" in url_low or "youtu.be" in url_low
 
-                # For YouTube: try clean Chrome TLS impersonation first (fastest, 0 cookie maintenance)
-                # For other platforms: use base opts with cookies enabled
+                # For YouTube: skip webpage scraping to avoid datacenter 429 IP blocks
                 opts = cls._get_base_opts(use_cookies=not is_youtube)
+                if is_youtube:
+                    opts["extractor_args"] = {
+                        "youtube": {
+                            "player_skip": ["webpage", "configs"],
+                            "player_client": ["android", "tv", "web"],
+                        }
+                    }
+
                 try:
                     with yt_dlp.YoutubeDL(opts) as ydl:
                         return ydl.extract_info(cleaned_url, download=False)
                 except Exception as first_exc:
                     if is_youtube:
-                        # Fallback 1: Try with cookies (for age-restricted or login-required videos)
+                        # Fallback 1: Try with cookies
                         try:
                             cookie_opts = cls._get_base_opts(use_cookies=True)
+                            cookie_opts["extractor_args"] = {
+                                "youtube": {
+                                    "player_skip": ["webpage", "configs"],
+                                    "player_client": ["android", "tv", "web"],
+                                }
+                            }
                             with yt_dlp.YoutubeDL(cookie_opts) as fb0_ydl:
                                 return fb0_ydl.extract_info(cleaned_url, download=False)
                         except Exception:
                             pass
 
-                        # Fallback 2: Try mobile client (android, ios)
+                        # Fallback 2: Try mobile client standard
                         try:
                             fb1_opts = cls._get_base_opts(use_cookies=False)
                             fb1_opts["extractor_args"] = {
@@ -273,17 +287,6 @@ class YtDlpService:
                             }
                             with yt_dlp.YoutubeDL(fb1_opts) as fb1_ydl:
                                 return fb1_ydl.extract_info(cleaned_url, download=False)
-                        except Exception:
-                            pass
-
-                        # Fallback 3: Try mweb client
-                        try:
-                            fb2_opts = cls._get_base_opts(use_cookies=False)
-                            fb2_opts["extractor_args"] = {
-                                "youtube": {"player_client": ["mweb"]}
-                            }
-                            with yt_dlp.YoutubeDL(fb2_opts) as fb2_ydl:
-                                return fb2_ydl.extract_info(cleaned_url, download=False)
                         except Exception:
                             pass
                     raise first_exc
@@ -297,13 +300,19 @@ class YtDlpService:
             if not info:
                 raise ValueError("No video data could be extracted from this URL.")
 
-            # In case a playlist or multi-entry object was returned, safely pick the first valid video
+            # In case a playlist or multi-entry object was returned (e.g. Instagram carousels), safely pick the best video entry
             if "entries" in info and info["entries"] is not None:
                 try:
-                    entries_list = list(info["entries"])
-                    first_valid = next((e for e in entries_list if e and isinstance(e, dict)), None)
-                    if first_valid:
-                        info = first_valid
+                    entries_list = [e for e in list(info["entries"]) if e and isinstance(e, dict)]
+                    # Prioritize an entry that has video formats with playable URLs
+                    first_with_formats = next(
+                        (e for e in entries_list if any(f.get("url") for f in e.get("formats", []))),
+                        None,
+                    )
+                    if first_with_formats:
+                        info = first_with_formats
+                    elif entries_list:
+                        info = entries_list[0]
                 except Exception:
                     pass
 
@@ -338,6 +347,23 @@ class YtDlpService:
                         "resolution": "direct",
                     }
                 ]
+
+            # If still no formats, check for high-res images/photos (e.g. Instagram photo posts/carousels)
+            if not raw_formats and info.get("thumbnails"):
+                best_thumb = info["thumbnails"][-1]
+                thumb_url = best_thumb.get("url")
+                if thumb_url:
+                    raw_formats = [
+                        {
+                            "format_id": "image_original",
+                            "ext": "jpg",
+                            "url": thumb_url,
+                            "vcodec": "image",
+                            "acodec": "none",
+                            "resolution": f"{best_thumb.get('width', 1080)}x{best_thumb.get('height', 1350)}",
+                            "format_note": "Original Photo (JPEG)",
+                        }
+                    ]
 
             # Parse and categorize formats
             for f in raw_formats:
