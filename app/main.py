@@ -117,7 +117,7 @@ async def debug_ytdlp_endpoint(
         "-v",
         "--dump-json",
         "--skip-download",
-        "--check-formats=False",
+        "--no-check-formats",
         "--socket-timeout", "10",
         "--retries", "1",
     ]
