@@ -51,7 +51,7 @@ async def lifespan(app: FastAPI):
 app = FastAPI(
     title="OmniDownloader API",
     description="High-Throughput Universal Video Search & Stream Extraction API",
-    version="1.1.0",
+    version="1.2.0",
     lifespan=lifespan,
 )
 
@@ -73,7 +73,7 @@ async def health_check():
     return {
         "status": "ok",
         "app": "OmniDownloader",
-        "version": "1.1.0",
+        "version": "1.2.0",
         "supported_platforms": [
             "YouTube",
             "Instagram",
@@ -110,6 +110,7 @@ async def debug_ytdlp_endpoint(
     url: str = Query("https://www.youtube.com/shorts/VaAgP-r8kMg"),
     timeout_sec: int = Query(20, ge=5, le=30),
     use_cookies: bool = Query(False),
+    impersonate: str = Query("chrome"),
     client: str = Query("default"),
 ):
     import subprocess
@@ -122,6 +123,8 @@ async def debug_ytdlp_endpoint(
         "--socket-timeout", "10",
         "--retries", "1",
     ]
+    if impersonate and impersonate.lower() != "none":
+        cmd.extend(["--impersonate", impersonate])
     if client and client != "default":
         cmd.extend(["--extractor-args", f"youtube:player_client={client}"])
     if use_cookies and os.path.exists("cookies.txt"):
