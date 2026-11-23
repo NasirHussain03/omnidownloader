@@ -1,113 +1,143 @@
----
-title: OmniDownloader
-emoji: 🚀
-colorFrom: purple
-colorTo: indigo
-sdk: gradio
-app_file: app.py
-pinned: false
-license: mit
----
-
 # OmniDownloader 🚀
 
-Universal Video & Audio Downloader Web Application built with **FastAPI**, **yt-dlp**, and a responsive **Tailwind CSS + Vanilla JavaScript** frontend.
+[![Python](https://img.shields.io/badge/Python-3.11-3776AB?style=flat-square&logo=python&logoColor=white)](https://python.org)
+[![FastAPI](https://img.shields.io/badge/FastAPI-0.110+-009688?style=flat-square&logo=fastapi&logoColor=white)](https://fastapi.tiangolo.com)
+[![yt-dlp](https://img.shields.io/badge/yt--dlp-2024+-red?style=flat-square&logo=youtube&logoColor=white)](https://github.com/yt-dlp/yt-dlp)
+[![Docker](https://img.shields.io/badge/Docker-Containerized-2496ED?style=flat-square&logo=docker&logoColor=white)](https://www.docker.com/)
+[![Render](https://img.shields.io/badge/Deploy-Render-46E3B7?style=flat-square&logo=render&logoColor=black)](https://render.com)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg?style=flat-square)](https://opensource.org/licenses/MIT)
 
-Supported platforms include **YouTube**, **Instagram** (Reels/Posts), **Facebook** (Reels/Watch), **Snapchat** (Spotlight/Stories), **TikTok**, **Twitter/X**, and other media platforms supported by yt-dlp.
+> **Live Website:** [https://omnidownloader.site](https://omnidownloader.site)  
+> **API Backend:** [https://omni-downloader-1r9v.onrender.com](https://omni-downloader-1r9v.onrender.com)
+
+A high-throughput, universal video and audio extraction web application and REST API built with **FastAPI**, **yt-dlp**, and a responsive **Tailwind CSS** frontend. OmniDownloader extracts direct, clean media streams (up to 4K MP4 and high-bitrate audio) from major social and video platforms without watermarks.
 
 ---
 
-## ✨ Features
+## 🌟 Key Features
 
-- 🔍 **YouTube Search (`/api/search`)**: Search YouTube via `ytsearch10:` and retrieve title, high-res thumbnail, duration, view count, and URLs.
-- ⚡ **Direct Stream Link Extractor (`/api/extract`)**: Extract direct MP4/Audio stream URLs without downloading to server storage (`download=False`).
-- 📥 **Integrated Stream Proxy (`/api/download`)**: 1-click clean file downloads with sanitized video title in `Content-Disposition`.
-- 🎛️ **Quality & Format Filter**: Sorts between direct Video+Audio MP4s, individual HD video streams (1080p, 720p, etc.), and Audio-only streams (M4A/MP3).
-- 📋 **Clipboard Paste & 1-Click Copy**: Paste URLs from clipboard or copy stream URLs instantly.
-- 🐳 **Docker & Cloud Ready**: Production `Dockerfile` and `render.yaml` configured for Render.com and Hugging Face Spaces (handles dynamic `$PORT` and non-root user permissions).
+* **Universal Platform Support**: Extract media from **Instagram Reels & Carousels**, **Facebook Watch & Reels**, **Snapchat Spotlight**, **YouTube Shorts & Videos**, **TikTok**, **Twitter/X**, and 1,000+ other platforms supported by `yt-dlp`.
+* **Zero-Storage Direct Extraction**: Extracts direct CDN stream URLs with `download=False`, avoiding server disk bloat and reducing server CPU load.
+* **Integrated Streaming Proxy (`/api/download`)**: Stream remote video chunks directly to the user's browser with sanitized, clean filenames (`Content-Disposition`).
+* **Multi-Format & Quality Separation**: Dynamically separates streams into combined Video+Audio MP4s, individual HD resolution streams (4K, 1440p, 1080p, 720p, 360p), and Audio-only streams (M4A/MP3).
+* **Instagram Carousel & Photo Fallback**: Handles mixed photo/video carousels gracefully without failing, automatically providing the original high-resolution JPEG photos when no video stream is present.
+* **High-Speed In-Memory Caching**: Caches popular extraction requests using `cachetools` LRU cache to deliver sub-second responses for repeated queries.
+* **Production Ready**: Containerized with multi-platform `Dockerfile`, native `Deno` JavaScript challenge engine, and production `Gunicorn + UvicornWorker` configuration.
+
+---
+
+## 📡 API Reference
+
+### 1. Extract Media Streams
+**`POST /api/extract`** or **`GET /api/extract?url=...`**
+
+Extracts metadata, thumbnails, and direct downloadable stream formats.
+
+```bash
+curl -X POST "https://omnidownloader.site/api/extract" \
+  -H "Content-Type: application/json" \
+  -d '{"url": "https://www.instagram.com/reel/C74t7kIvzN1/"}'
+```
+
+**Response (`200 OK`):**
+```json
+{
+  "id": "C74t7kIvzN1",
+  "title": "Sample Reel Title",
+  "platform": "Instagram",
+  "duration": 30,
+  "thumbnail": "https://...",
+  "best_direct_download": "/api/download?url=...",
+  "formats": [
+    {
+      "format_id": "0",
+      "ext": "mp4",
+      "resolution": "720p HD",
+      "quality_label": "720p HD • Video + Audio (MP4)",
+      "download_url": "/api/download?url=...",
+      "has_video": true,
+      "has_audio": true
+    }
+  ]
+}
+```
+
+### 2. Search Videos
+**`GET /api/search?q={query}&limit={10}`**
+
+Search for videos on YouTube and retrieve metadata, thumbnails, duration, and direct video links.
+
+```bash
+curl -X GET "https://omnidownloader.site/api/search?q=lofi+beats&limit=5"
+```
+
+### 3. Stream Download Proxy
+**`GET /api/download?url={stream_url}&title={filename}&ext={mp4}`**
+
+Streams remote CDN video bytes with range support and proper content headers for direct browser downloads.
+
+### 4. Health Check
+**`GET /api/health`**
+
+Returns service health, version, and platform status.
 
 ---
 
 ## 🛠️ Local Development
 
-### 1. Prerequisites
-- Python 3.10+
-- (Optional) `ffmpeg` installed on your system for audio conversions
-
-### 2. Setup Virtual Environment
+### 1. Clone & Setup Environment
 ```bash
+git clone https://github.com/NasirHussain03/omnidownloader.git
+cd omnidownloader
+
+# Create virtual environment
 python -m venv .venv
 
-# On Windows
+# Activate virtual environment
+# Windows:
 .\.venv\Scripts\activate
-
-# On Linux/macOS
+# Linux / macOS:
 source .venv/bin/activate
-```
 
-### 3. Install Dependencies
-```bash
+# Install dependencies
 pip install -r requirements.txt
 ```
 
-### 4. Run the Server
+### 2. Run the Development Server
 ```bash
-uvicorn app.main:app --host 127.0.0.1 --port 8000 --reload
+uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
 ```
 
-Open your browser at:
-- Web App: `http://localhost:8000/`
-- Interactive API Swagger Docs: `http://localhost:8000/docs`
-- Health check: `http://localhost:8000/api/health`
+Access the application:
+* **Web UI**: [http://localhost:8000/](http://localhost:8000/)
+* **Interactive Swagger Docs**: [http://localhost:8000/docs](http://localhost:8000/docs)
+* **Health Check**: [http://localhost:8000/api/health](http://localhost:8000/api/health)
 
 ---
 
-## 📡 API Endpoints
+## 🐳 Docker Deployment
 
-### 1. `GET /api/search`
-Search YouTube for videos.
-
-**Query Parameters:**
-- `q`: Search keyword (e.g. `lofi beats`)
-- `limit`: Number of results (default 10, max 25)
-
-**Example Request:**
+Build and run locally with Docker:
 ```bash
-curl -X GET "http://localhost:8000/api/search?q=lofi+hip+hop&limit=5"
+docker build -t omnidownloader .
+docker run -p 7860:7860 omnidownloader
 ```
-
-### 2. `POST /api/extract` or `GET /api/extract`
-Extract direct media stream URLs and metadata from YouTube, Instagram, Facebook, Snapchat, etc.
-
-**POST Body:**
-```json
-{
-  "url": "https://www.youtube.com/watch?v=dQw4w9WgXcQ"
-}
-```
-
-**Example Request:**
-```bash
-curl -X POST "http://localhost:8000/api/extract" \
-  -H "Content-Type: application/json" \
-  -d '{"url": "https://www.youtube.com/watch?v=dQw4w9WgXcQ"}'
-```
-
-### 3. `GET /api/download`
-Streams the remote media directly to the browser as an attachment file download with proper filenames.
 
 ---
 
-## 🚢 Deployment
+## ⚡ Keeping Free Tier Render Always Awake (24/7)
 
-### Hugging Face Spaces
-1. Create a new Space on [Hugging Face](https://huggingface.co/new-space).
-2. Choose **Docker** as the SDK.
-3. Push this repository to your Space repository.
-4. The `Dockerfile` is pre-configured with user UID `1000`, `ffmpeg`, and default port `7860`.
+Render's free tier automatically pauses web services after 15 minutes of inactivity, which causes a 50-second cold-start delay for new visitors.
 
-### Render.com
-1. Create a new **Web Service** on [Render](https://render.com/).
-2. Select **Docker** or link your Git repository (Render automatically detects `render.yaml` or `Dockerfile`).
-3. Set the Health Check path to `/api/health`.
-4. Deploy! Render will pass its `$PORT` (e.g., 10000) which our Dockerfile dynamically uses.
+To keep your free instance warm and instantly available 24/7 at **$0 cost**:
+1. Go to [cron-job.org](https://cron-job.org) or [UptimeRobot](https://uptimerobot.com).
+2. Create a new monitor / cron job:
+   * **URL to monitor**: `https://omni-downloader-1r9v.onrender.com/api/health`
+   * **Interval**: Every **10 minutes**
+3. Save the monitor. Every 10 minutes, the monitor sends a lightweight health check ping that resets Render's 15-minute inactivity timer, keeping the service permanently active and ready for users.
+
+---
+
+## 📄 License
+
+This project is licensed under the [MIT License](LICENSE).

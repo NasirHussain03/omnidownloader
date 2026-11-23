@@ -1,0 +1,10 @@
+# GitHub Linguist language detection overrides
+# Ignore frontend assets and static HTML/JS/CSS files from repository language statistics
+static/* linguist-vendored
+static/** linguist-vendored
+*.html linguist-detectable=false
+*.js linguist-detectable=false
+*.css linguist-detectable=false
+
+# Explicitly prioritize Python
+*.py linguist-detectable=true

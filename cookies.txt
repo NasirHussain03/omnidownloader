@@ -58,3 +58,10 @@ accounts.google.com	FALSE	/	TRUE	1829158666	__Host-3PLSID	o.chromewebstore.googl
 ogs.google.com	FALSE	/	TRUE	1797190643	OTZ	8871577_34_34__34_
 .facebook.com	TRUE	/	TRUE	1829202123	sb	yxD4amC-ZivSQSLFOlCz2GQo
 .facebook.com	TRUE	/	TRUE	1829202966	datr	FxT4atgTK-SzPFwYeSawjml7
+.facebook.com	TRUE	/	TRUE	1829205978	ps_l	1
+.facebook.com	TRUE	/	TRUE	1829205978	ps_n	1
+.instagram.com	TRUE	/	TRUE	1829205537	datr	Ih74aprtgrxiGUBCY27cVk1v
+.instagram.com	TRUE	/	TRUE	1826181537	ig_did	8E34460A-D33B-4C21-B6B9-EDA43B778A7E
+.instagram.com	TRUE	/	TRUE	1829205537	mid	avgeIgALAAG_i50dmE70-g4__wgs
+.instagram.com	TRUE	/	TRUE	1826181538	ig_nrcb	1
+.instagram.com	TRUE	/	TRUE	1829205975	csrftoken	9fmOfNZTA12armRpViOCM3
