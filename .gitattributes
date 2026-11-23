@@ -1,9 +1,13 @@
 # GitHub Linguist language detection overrides
-# Exclude frontend assets and static files from repository language statistics
-static/** linguist-vendored
-*.html linguist-vendored
-*.js linguist-vendored
-*.css linguist-vendored
+# Vendor and document all frontend/static files so they are excluded from language statistics
+* linguist-vendored
+*.html linguist-vendored linguist-documentation
+*.js linguist-vendored linguist-documentation
+*.css linguist-vendored linguist-documentation
 
-# Ensure Python is detected as the primary language
-*.py linguist-detectable=true
+# Unvendor Python source files so Python is the primary language
+*.py -linguist-vendored linguist-detectable=true
+app/** -linguist-vendored linguist-detectable=true
+gunicorn_conf.py -linguist-vendored linguist-detectable=true
+app.py -linguist-vendored linguist-detectable=true
+test_app.py -linguist-vendored linguist-detectable=true
